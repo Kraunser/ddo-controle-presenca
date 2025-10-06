@@ -161,3 +161,6 @@ dotnet ef migrations script > ../database_script.sql
 
 *Este projeto foi desenvolvido pela Manus AI para a Randoncorp.*
 *Data: 06 de outubro de 2025*
+
+  
+ 
