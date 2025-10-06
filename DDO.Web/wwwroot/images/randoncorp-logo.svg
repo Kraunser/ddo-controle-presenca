@@ -1,0 +1,26 @@
+<svg viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF8C00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E67E00;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Símbolo geométrico -->
+  <g transform="translate(5, 8)">
+    <rect x="0" y="0" width="20" height="4" fill="url(#logoGradient)" rx="2"/>
+    <rect x="0" y="6" width="16" height="4" fill="url(#logoGradient)" rx="2"/>
+    <rect x="0" y="12" width="20" height="4" fill="url(#logoGradient)" rx="2"/>
+    <rect x="0" y="18" width="12" height="4" fill="url(#logoGradient)" rx="2"/>
+  </g>
+  
+  <!-- Texto RANDONCORP -->
+  <text x="35" y="26" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="url(#logoGradient)">
+    RANDONCORP
+  </text>
+  
+  <!-- Subtítulo DDO -->
+  <text x="35" y="35" font-family="Inter, sans-serif" font-size="8" font-weight="500" fill="#607D8B">
+    CONTROLE DE PRESENÇA
+  </text>
+</svg>

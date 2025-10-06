@@ -1,0 +1,187 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="">
+            <img src="images/randoncorp-logo.svg" alt="Randoncorp DDO" height="32" class="me-2" />
+            <div>
+                <div class="brand-title">DDO</div>
+                <div class="brand-subtitle">Controle de Ponto</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<input type="checkbox" title="Menu de navegação" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <AuthorizeView>
+            <Authorized>
+                <!-- Dashboard -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="bi bi-speedometer2" aria-hidden="true"></span> Dashboard
+                    </NavLink>
+                </div>
+
+                <!-- Presença -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Presença</div>
+                    
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/presenca/registrar">
+                            <span class="bi bi-clock" aria-hidden="true"></span> Registrar Presença
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/presenca/consultar">
+                            <span class="bi bi-search" aria-hidden="true"></span> Consultar Presenças
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/presenca/relatorios">
+                            <span class="bi bi-graph-up" aria-hidden="true"></span> Relatórios
+                        </NavLink>
+                    </div>
+                </div>
+
+                <!-- Arquivos DDO -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Arquivos DDO</div>
+                    
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/arquivos/upload">
+                            <span class="bi bi-cloud-upload" aria-hidden="true"></span> Upload de PDFs
+                        </NavLink>
+                    </div>
+
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/arquivos/listar">
+                            <span class="bi bi-file-earmark-pdf" aria-hidden="true"></span> Listar Arquivos
+                        </NavLink>
+                    </div>
+                </div>
+
+                <!-- Administração -->
+                <AuthorizeView Roles="Administrator,Manager">
+                    <div class="nav-section">
+                        <div class="nav-section-title">Administração</div>
+                        
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="/colaboradores">
+                                <span class="bi bi-people" aria-hidden="true"></span> Colaboradores
+                            </NavLink>
+                        </div>
+
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="/colaboradores/importar">
+                                <span class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></span> Importar CSV
+                            </NavLink>
+                        </div>
+
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="/areas">
+                                <span class="bi bi-building" aria-hidden="true"></span> Áreas
+                            </NavLink>
+                        </div>
+                    </div>
+                </AuthorizeView>
+
+                <!-- Sistema -->
+                <AuthorizeView Roles="Administrator">
+                    <div class="nav-section">
+                        <div class="nav-section-title">Sistema</div>
+                        
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="/sistema/usuarios">
+                                <span class="bi bi-person-gear" aria-hidden="true"></span> Usuários
+                            </NavLink>
+                        </div>
+
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="/sistema/logs">
+                                <span class="bi bi-journal-text" aria-hidden="true"></span> Logs do Sistema
+                            </NavLink>
+                        </div>
+
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="/sistema/configuracoes">
+                                <span class="bi bi-gear" aria-hidden="true"></span> Configurações
+                            </NavLink>
+                        </div>
+                    </div>
+                </AuthorizeView>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/Account/Login">
+                        <span class="bi bi-box-arrow-in-right" aria-hidden="true"></span> Entrar
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+</div>
+
+<style>
+    .navbar-brand {
+        text-decoration: none !important;
+    }
+
+    .brand-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        line-height: 1;
+        color: white;
+    }
+
+    .brand-subtitle {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1;
+    }
+
+    .nav-section {
+        margin-top: 1rem;
+    }
+
+    .nav-section-title {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.6);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 0.5rem;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        border-radius: 0.375rem;
+        margin: 0.125rem 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-weight: 500;
+    }
+
+    .nav-link span {
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+    }
+</style>

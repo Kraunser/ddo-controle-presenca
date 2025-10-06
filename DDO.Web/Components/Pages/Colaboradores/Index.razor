@@ -1,0 +1,395 @@
+@page "/colaboradores"
+@using Microsoft.AspNetCore.Authorization
+@using DDO.Application.Interfaces
+@using DDO.Core.Entities
+@attribute [Authorize(Roles = "Administrator,Manager")]
+@inject IColaboradorRepository ColaboradorRepository
+@inject IAreaRepository AreaRepository
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Colaboradores - DDO Controle de Ponto</PageTitle>
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">
+                <span class="bi bi-people me-2"></span>
+                Colaboradores
+            </h1>
+            <p class="page-subtitle">Gerencie os colaboradores cadastrados no sistema</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/colaboradores/importar" class="btn btn-success">
+                <span class="bi bi-file-earmark-spreadsheet me-2"></span>
+                Importar CSV
+            </a>
+            <button class="btn btn-primary" @onclick="AbrirModalNovoColaborador">
+                <span class="bi bi-person-plus me-2"></span>
+                Novo Colaborador
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" @bind="filtroNome" @onkeypress="@(async (e) => { if (e.Key == "Enter") await CarregarColaboradores(); })" placeholder="Nome, matrícula ou email...">
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CarregarColaboradores">
+                        <span class="bi bi-search"></span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Área</label>
+                <select class="form-select" @bind="filtroAreaId" @onchange="CarregarColaboradores">
+                    <option value="">Todas as áreas</option>
+                    @foreach (var area in areas)
+                    {
+                        <option value="@area.Id">@area.Nome</option>
+                    }
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" @bind="filtroStatus" @onchange="CarregarColaboradores">
+                    <option value="">Todos</option>
+                    <option value="ativo">Ativos</option>
+                    <option value="inativo">Inativos</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100" @onclick="LimparFiltros">
+                    <span class="bi bi-arrow-clockwise"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Colaboradores -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                Colaboradores (@totalColaboradores)
+            </h5>
+            <div class="d-flex gap-2">
+                <select class="form-select form-select-sm" style="width: auto;" @bind="itensPorPagina" @onchange="CarregarColaboradores">
+                    <option value="10">10 por página</option>
+                    <option value="25">25 por página</option>
+                    <option value="50">50 por página</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        @if (isLoading)
+        {
+            <div class="text-center p-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+        }
+        else if (colaboradores.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Colaborador</th>
+                            <th>Matrícula</th>
+                            <th>RFID</th>
+                            <th>Área</th>
+                            <th>Contato</th>
+                            <th>Status</th>
+                            <th>Cadastro</th>
+                            <th width="120">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var colaborador in colaboradores)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar me-2">
+                                            <span class="bi bi-person-circle"></span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-medium">@colaborador.Nome</div>
+                                            @if (!string.IsNullOrEmpty(colaborador.Email))
+                                            {
+                                                <div class="text-muted small">@colaborador.Email</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@colaborador.Matricula</span>
+                                </td>
+                                <td>
+                                    <code class="small">@colaborador.CodigoRFID</code>
+                                </td>
+                                <td>
+                                    @if (colaborador.Area != null)
+                                    {
+                                        <span class="badge bg-primary">@colaborador.Area.Nome</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(colaborador.Telefone))
+                                    {
+                                        <div class="small">@colaborador.Telefone</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (colaborador.Ativo)
+                                    {
+                                        <span class="badge bg-success">Ativo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inativo</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div>@colaborador.DataCadastro.ToString("dd/MM/yyyy")</div>
+                                    <div class="text-muted small">@colaborador.DataCadastro.ToString("HH:mm")</div>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @onclick="() => VisualizarColaborador(colaborador.Id)" title="Visualizar">
+                                            <span class="bi bi-eye"></span>
+                                        </button>
+                                        <button class="btn btn-outline-warning" @onclick="() => EditarColaborador(colaborador.Id)" title="Editar">
+                                            <span class="bi bi-pencil"></span>
+                                        </button>
+                                        <button class="btn btn-outline-danger" @onclick="() => ConfirmarRemocao(colaborador)" title="Remover">
+                                            <span class="bi bi-trash"></span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            @if (totalPaginas > 1)
+            {
+                <div class="card-footer">
+                    <nav>
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            <li class="page-item @(paginaAtual == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => IrParaPagina(paginaAtual - 1)">Anterior</button>
+                            </li>
+                            
+                            @for (int i = Math.Max(1, paginaAtual - 2); i <= Math.Min(totalPaginas, paginaAtual + 2); i++)
+                            {
+                                <li class="page-item @(i == paginaAtual ? "active" : "")">
+                                    <button class="page-link" @onclick="() => IrParaPagina(i)">@i</button>
+                                </li>
+                            }
+                            
+                            <li class="page-item @(paginaAtual == totalPaginas ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => IrParaPagina(paginaAtual + 1)">Próximo</button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center p-4">
+                <div class="text-muted">
+                    <span class="bi bi-people display-1 d-block mb-3"></span>
+                    <h5>Nenhum colaborador encontrado</h5>
+                    <p>Não há colaboradores que correspondam aos filtros selecionados.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-primary" @onclick="AbrirModalNovoColaborador">
+                            <span class="bi bi-person-plus me-2"></span>
+                            Novo Colaborador
+                        </button>
+                        <a href="/colaboradores/importar" class="btn btn-success">
+                            <span class="bi bi-file-earmark-spreadsheet me-2"></span>
+                            Importar CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Colaborador> colaboradores = new();
+    private List<Area> areas = new();
+    private bool isLoading = true;
+    
+    // Filtros
+    private string filtroNome = "";
+    private int? filtroAreaId;
+    private string filtroStatus = "";
+    
+    // Paginação
+    private int paginaAtual = 1;
+    private int itensPorPagina = 25;
+    private int totalColaboradores = 0;
+    private int totalPaginas => (int)Math.Ceiling((double)totalColaboradores / itensPorPagina);
+
+    protected override async Task OnInitializedAsync()
+    {
+        areas = (await AreaRepository.ObterTodasAtivasAsync()).ToList();
+        await CarregarColaboradores();
+    }
+
+    private async Task CarregarColaboradores()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var resultado = await ColaboradorRepository.ObterComPaginacaoAsync(
+                paginaAtual, 
+                itensPorPagina, 
+                string.IsNullOrEmpty(filtroNome) ? null : filtroNome,
+                filtroAreaId);
+
+            colaboradores = resultado.Colaboradores.ToList();
+            totalColaboradores = resultado.Total;
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao carregar colaboradores.");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task IrParaPagina(int pagina)
+    {
+        if (pagina >= 1 && pagina <= totalPaginas)
+        {
+            paginaAtual = pagina;
+            await CarregarColaboradores();
+        }
+    }
+
+    private async Task LimparFiltros()
+    {
+        filtroNome = "";
+        filtroAreaId = null;
+        filtroStatus = "";
+        paginaAtual = 1;
+        await CarregarColaboradores();
+    }
+
+    private async Task AbrirModalNovoColaborador()
+    {
+        // TODO: Implementar modal de novo colaborador
+        await JSRuntime.InvokeVoidAsync("showAlert", "info", "Em desenvolvimento", "Funcionalidade será implementada em breve.");
+    }
+
+    private async Task VisualizarColaborador(int colaboradorId)
+    {
+        // TODO: Implementar visualização de colaborador
+        await JSRuntime.InvokeVoidAsync("showAlert", "info", "Em desenvolvimento", "Funcionalidade será implementada em breve.");
+    }
+
+    private async Task EditarColaborador(int colaboradorId)
+    {
+        // TODO: Implementar edição de colaborador
+        await JSRuntime.InvokeVoidAsync("showAlert", "info", "Em desenvolvimento", "Funcionalidade será implementada em breve.");
+    }
+
+    private async Task ConfirmarRemocao(Colaborador colaborador)
+    {
+        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Tem certeza que deseja remover o colaborador '{colaborador.Nome}'?");
+        
+        if (confirmado)
+        {
+            await RemoverColaborador(colaborador.Id);
+        }
+    }
+
+    private async Task RemoverColaborador(int colaboradorId)
+    {
+        try
+        {
+            var removido = await ColaboradorRepository.RemoverAsync(colaboradorId);
+            if (removido)
+            {
+                await JSRuntime.InvokeVoidAsync("showAlert", "success", "Sucesso!", "Colaborador removido com sucesso.");
+                await CarregarColaboradores();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Colaborador não encontrado.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao remover colaborador.");
+        }
+    }
+}
+
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        color: #1e40af;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .avatar {
+        font-size: 1.5rem;
+        color: #6b7280;
+    }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+    }
+
+    code {
+        background-color: #f3f4f6;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+</style>

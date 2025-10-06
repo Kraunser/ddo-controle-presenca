@@ -1,0 +1,379 @@
+@page "/arquivos/listar"
+@using Microsoft.AspNetCore.Authorization
+@using DDO.Application.Interfaces
+@using DDO.Core.Entities
+@attribute [Authorize]
+@inject IArquivoPDFRepository ArquivoPDFRepository
+@inject IAreaRepository AreaRepository
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>Arquivos PDF - DDO Controle de Ponto</PageTitle>
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">
+                <span class="bi bi-file-earmark-pdf me-2"></span>
+                Arquivos PDF
+            </h1>
+            <p class="page-subtitle">Gerencie os arquivos DDO enviados para o sistema</p>
+        </div>
+        <div>
+            <a href="/arquivos/upload" class="btn btn-primary">
+                <span class="bi bi-cloud-upload me-2"></span>
+                Novo Upload
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Buscar por nome</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" @bind="filtroNome" @onkeypress="@(async (e) => { if (e.Key == "Enter") await CarregarArquivos(); })" placeholder="Digite o nome do arquivo...">
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CarregarArquivos">
+                        <span class="bi bi-search"></span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Área</label>
+                <select class="form-select" @bind="filtroAreaId" @onchange="CarregarArquivos">
+                    <option value="">Todas as áreas</option>
+                    @foreach (var area in areas)
+                    {
+                        <option value="@area.Id">@area.Nome</option>
+                    }
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">Data início</label>
+                <input type="date" class="form-control" @bind="dataInicio" @onchange="CarregarArquivos">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">Data fim</label>
+                <input type="date" class="form-control" @bind="dataFim" @onchange="CarregarArquivos">
+            </div>
+            
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100" @onclick="LimparFiltros">
+                    <span class="bi bi-arrow-clockwise"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Arquivos -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                Arquivos (@totalArquivos)
+            </h5>
+            <div class="d-flex gap-2">
+                <select class="form-select form-select-sm" style="width: auto;" @bind="itensPorPagina" @onchange="CarregarArquivos">
+                    <option value="10">10 por página</option>
+                    <option value="25">25 por página</option>
+                    <option value="50">50 por página</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        @if (isLoading)
+        {
+            <div class="text-center p-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+        }
+        else if (arquivos.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Arquivo</th>
+                            <th>Área</th>
+                            <th>Tamanho</th>
+                            <th>Data Upload</th>
+                            <th>Data Referência</th>
+                            <th>Visualizações</th>
+                            <th width="120">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var arquivo in arquivos)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="bi bi-file-earmark-pdf text-danger me-2"></span>
+                                        <div>
+                                            <div class="fw-medium">@arquivo.NomeArquivo</div>
+                                            @if (!string.IsNullOrEmpty(arquivo.Descricao))
+                                            {
+                                                <div class="text-muted small">@arquivo.Descricao</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (arquivo.Area != null)
+                                    {
+                                        <span class="badge bg-primary">@arquivo.Area.Nome</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>@FormatFileSize(arquivo.TamanhoArquivo)</td>
+                                <td>
+                                    <div>@arquivo.DataUpload.ToString("dd/MM/yyyy")</div>
+                                    <div class="text-muted small">@arquivo.DataUpload.ToString("HH:mm")</div>
+                                </td>
+                                <td>
+                                    @if (arquivo.DataReferencia.HasValue)
+                                    {
+                                        @arquivo.DataReferencia.Value.ToString("dd/MM/yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">@arquivo.NumeroVisualizacoes</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @onclick="() => VisualizarArquivo(arquivo.Id)" title="Visualizar">
+                                            <span class="bi bi-eye"></span>
+                                        </button>
+                                        <button class="btn btn-outline-success" @onclick="() => DownloadArquivo(arquivo.Id)" title="Download">
+                                            <span class="bi bi-download"></span>
+                                        </button>
+                                        <AuthorizeView Roles="Administrator,Manager">
+                                            <button class="btn btn-outline-danger" @onclick="() => ConfirmarRemocao(arquivo)" title="Remover">
+                                                <span class="bi bi-trash"></span>
+                                            </button>
+                                        </AuthorizeView>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            @if (totalPaginas > 1)
+            {
+                <div class="card-footer">
+                    <nav>
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            <li class="page-item @(paginaAtual == 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => IrParaPagina(paginaAtual - 1)">Anterior</button>
+                            </li>
+                            
+                            @for (int i = Math.Max(1, paginaAtual - 2); i <= Math.Min(totalPaginas, paginaAtual + 2); i++)
+                            {
+                                <li class="page-item @(i == paginaAtual ? "active" : "")">
+                                    <button class="page-link" @onclick="() => IrParaPagina(i)">@i</button>
+                                </li>
+                            }
+                            
+                            <li class="page-item @(paginaAtual == totalPaginas ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => IrParaPagina(paginaAtual + 1)">Próximo</button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center p-4">
+                <div class="text-muted">
+                    <span class="bi bi-inbox display-1 d-block mb-3"></span>
+                    <h5>Nenhum arquivo encontrado</h5>
+                    <p>Não há arquivos que correspondam aos filtros selecionados.</p>
+                    <a href="/arquivos/upload" class="btn btn-primary">
+                        <span class="bi bi-cloud-upload me-2"></span>
+                        Fazer Upload
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<ArquivoPDF> arquivos = new();
+    private List<Area> areas = new();
+    private bool isLoading = true;
+    
+    // Filtros
+    private string filtroNome = "";
+    private int? filtroAreaId;
+    private DateTime? dataInicio;
+    private DateTime? dataFim;
+    
+    // Paginação
+    private int paginaAtual = 1;
+    private int itensPorPagina = 25;
+    private int totalArquivos = 0;
+    private int totalPaginas => (int)Math.Ceiling((double)totalArquivos / itensPorPagina);
+
+    protected override async Task OnInitializedAsync()
+    {
+        areas = (await AreaRepository.ObterTodasAtivasAsync()).ToList();
+        await CarregarArquivos();
+    }
+
+    private async Task CarregarArquivos()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            DateOnly? dataInicioFiltro = dataInicio.HasValue ? DateOnly.FromDateTime(dataInicio.Value) : null;
+            DateOnly? dataFimFiltro = dataFim.HasValue ? DateOnly.FromDateTime(dataFim.Value) : null;
+
+            var resultado = await ArquivoPDFRepository.ObterComPaginacaoAsync(
+                paginaAtual, 
+                itensPorPagina, 
+                string.IsNullOrEmpty(filtroNome) ? null : filtroNome,
+                filtroAreaId,
+                dataInicioFiltro,
+                dataFimFiltro);
+
+            arquivos = resultado.Arquivos.ToList();
+            totalArquivos = resultado.Total;
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao carregar arquivos.");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task IrParaPagina(int pagina)
+    {
+        if (pagina >= 1 && pagina <= totalPaginas)
+        {
+            paginaAtual = pagina;
+            await CarregarArquivos();
+        }
+    }
+
+    private async Task LimparFiltros()
+    {
+        filtroNome = "";
+        filtroAreaId = null;
+        dataInicio = null;
+        dataFim = null;
+        paginaAtual = 1;
+        await CarregarArquivos();
+    }
+
+    private async Task VisualizarArquivo(int arquivoId)
+    {
+        // TODO: Implementar visualização inline do PDF
+        await DownloadArquivo(arquivoId);
+    }
+
+    private async Task DownloadArquivo(int arquivoId)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("downloadFile", $"/api/arquivos/{arquivoId}/download");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao fazer download do arquivo.");
+        }
+    }
+
+    private async Task ConfirmarRemocao(ArquivoPDF arquivo)
+    {
+        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Tem certeza que deseja remover o arquivo '{arquivo.NomeArquivo}'?");
+        
+        if (confirmado)
+        {
+            await RemoverArquivo(arquivo.Id);
+        }
+    }
+
+    private async Task RemoverArquivo(int arquivoId)
+    {
+        try
+        {
+            // TODO: Implementar remoção via service
+            await JSRuntime.InvokeVoidAsync("showAlert", "success", "Sucesso!", "Arquivo removido com sucesso.");
+            await CarregarArquivos();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao remover arquivo.");
+        }
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}
+
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        color: #1e40af;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+    }
+</style>

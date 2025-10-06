@@ -1,0 +1,566 @@
+@page "/presenca/monitor"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.SignalR.Client
+@using DDO.Application.Services
+@using DDO.Core.Enums
+@attribute [Authorize]
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>Monitor de Presença - DDO Controle de Ponto</PageTitle>
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">
+                <span class="bi bi-broadcast me-2"></span>
+                Monitor de Presença
+            </h1>
+            <p class="page-subtitle">Acompanhe os registros de presença em tempo real</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <div class="connection-status">
+                @if (IsConnected)
+                {
+                    <span class="badge bg-success">
+                        <span class="bi bi-wifi me-1"></span>
+                        Conectado
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">
+                        <span class="bi bi-wifi-off me-1"></span>
+                        Desconectado
+                    </span>
+                }
+            </div>
+            <button class="btn btn-outline-primary" @onclick="TestarConexao" disabled="@(!IsConnected)">
+                <span class="bi bi-arrow-clockwise me-2"></span>
+                Testar Conexão
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Estatísticas Rápidas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card stat-today">
+            <div class="stat-icon">
+                <span class="bi bi-calendar-day"></span>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@presencasHoje</div>
+                <div class="stat-label">Presenças Hoje</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-online">
+            <div class="stat-icon">
+                <span class="bi bi-people"></span>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@colaboradoresAtivos</div>
+                <div class="stat-label">Colaboradores Ativos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-areas">
+            <div class="stat-icon">
+                <span class="bi bi-building"></span>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@areasComPresenca</div>
+                <div class="stat-label">Áreas com Presença</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-last">
+            <div class="stat-icon">
+                <span class="bi bi-clock"></span>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@ultimoRegistroTempo</div>
+                <div class="stat-label">Último Registro</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registro Manual -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <span class="bi bi-hand-index me-2"></span>
+            Registro Manual de Presença
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Colaborador</label>
+                <select class="form-select" @bind="colaboradorSelecionado">
+                    <option value="">Selecione um colaborador...</option>
+                    <!-- TODO: Carregar colaboradores -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tipo de Registro</label>
+                <select class="form-select" @bind="tipoRegistroSelecionado">
+                    <option value="">Selecione...</option>
+                    <option value="@TipoRegistroPresenca.Entrada">Entrada</option>
+                    <option value="@TipoRegistroPresenca.Saida">Saída</option>
+                    <option value="@TipoRegistroPresenca.SaidaIntervalo">Saída Intervalo</option>
+                    <option value="@TipoRegistroPresenca.RetornoIntervalo">Retorno Intervalo</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Observações</label>
+                <input type="text" class="form-control" @bind="observacoesRegistro" placeholder="Opcional...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" @onclick="RegistrarPresencaManual" 
+                        disabled="@(!IsConnected || string.IsNullOrEmpty(colaboradorSelecionado) || string.IsNullOrEmpty(tipoRegistroSelecionado))">
+                    <span class="bi bi-plus-circle me-2"></span>
+                    Registrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feed de Presenças em Tempo Real -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <span class="bi bi-activity me-2"></span>
+                Registros em Tempo Real
+            </h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="LimparFeed">
+                    <span class="bi bi-trash me-1"></span>
+                    Limpar
+                </button>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" @bind="autoScroll" id="autoScrollSwitch">
+                    <label class="form-check-label" for="autoScrollSwitch">
+                        Auto-scroll
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="presence-feed" id="presenceFeed">
+            @if (registrosPresenca.Any())
+            {
+                @foreach (var registro in registrosPresenca.OrderByDescending(r => r.DataHora))
+                {
+                    <div class="presence-item @GetPresenceItemClass(registro.TipoRegistro)">
+                        <div class="presence-avatar">
+                            <span class="bi bi-person-circle"></span>
+                        </div>
+                        <div class="presence-content">
+                            <div class="presence-header">
+                                <span class="presence-name">@registro.ColaboradorNome</span>
+                                <span class="presence-badge badge @GetTipoRegistroBadgeClass(registro.TipoRegistro)">
+                                    @GetTipoRegistroLabel(registro.TipoRegistro)
+                                </span>
+                                <span class="presence-time">@registro.DataHora.ToString("HH:mm:ss")</span>
+                            </div>
+                            <div class="presence-details">
+                                <span class="presence-area">@registro.ColaboradorArea</span>
+                                @if (!string.IsNullOrEmpty(registro.DispositivoOrigem))
+                                {
+                                    <span class="presence-device">• @registro.DispositivoOrigem</span>
+                                }
+                                @if (!string.IsNullOrEmpty(registro.Observacoes))
+                                {
+                                    <span class="presence-obs">• @registro.Observacoes</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="presence-icon">
+                            <span class="bi @GetTipoRegistroIcon(registro.TipoRegistro)"></span>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center p-4 text-muted">
+                    <span class="bi bi-clock-history display-4 d-block mb-3"></span>
+                    <h6>Aguardando registros...</h6>
+                    <p class="small">Os registros de presença aparecerão aqui em tempo real</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private HubConnection? hubConnection;
+    private List<RegistroPresencaRealTime> registrosPresenca = new();
+    
+    // Estatísticas
+    private int presencasHoje = 0;
+    private int colaboradoresAtivos = 0;
+    private int areasComPresenca = 0;
+    private string ultimoRegistroTempo = "-";
+    
+    // Registro manual
+    private string colaboradorSelecionado = "";
+    private string tipoRegistroSelecionado = "";
+    private string observacoesRegistro = "";
+    
+    // Configurações
+    private bool autoScroll = true;
+    private const int MaxRegistrosExibidos = 50;
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InicializarSignalR();
+        await CarregarEstatisticasIniciais();
+    }
+
+    private async Task InicializarSignalR()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/presencahub"))
+            .Build();
+
+        // Configurar handlers de eventos
+        hubConnection.On<object>("NovaPresencaRegistrada", async (presenca) =>
+        {
+            await AdicionarRegistroPresenca(presenca);
+            await AtualizarEstatisticas();
+            StateHasChanged();
+        });
+
+        hubConnection.On<ResultadoRegistroPresenca>("ResultadoRegistroPresenca", async (resultado) =>
+        {
+            if (resultado.Sucesso)
+            {
+                await JSRuntime.InvokeVoidAsync("showAlert", "success", "Sucesso!", resultado.Mensagem);
+                LimparFormularioRegistro();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", resultado.Mensagem);
+            }
+            StateHasChanged();
+        });
+
+        hubConnection.On<object>("TesteConexaoRFID", async (resultado) =>
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "info", "Teste de Conexão", "Conexão SignalR funcionando corretamente!");
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task CarregarEstatisticasIniciais()
+    {
+        // TODO: Implementar carregamento de estatísticas iniciais
+        presencasHoje = 0;
+        colaboradoresAtivos = 0;
+        areasComPresenca = 0;
+        ultimoRegistroTempo = "-";
+    }
+
+    private async Task AdicionarRegistroPresenca(object presencaObj)
+    {
+        try
+        {
+            // Converter objeto dinâmico para nosso modelo
+            var presencaDict = presencaObj as Dictionary<string, object>;
+            if (presencaDict != null)
+            {
+                var registro = new RegistroPresencaRealTime
+                {
+                    ColaboradorNome = presencaDict.GetValueOrDefault("colaboradorNome")?.ToString() ?? "",
+                    ColaboradorArea = presencaDict.GetValueOrDefault("colaboradorArea")?.ToString() ?? "",
+                    TipoRegistro = presencaDict.GetValueOrDefault("tipoRegistro")?.ToString() ?? "",
+                    DataHora = DateTime.Parse(presencaDict.GetValueOrDefault("dataHoraRegistro")?.ToString() ?? DateTime.Now.ToString()),
+                    DispositivoOrigem = presencaDict.GetValueOrDefault("dispositivoOrigem")?.ToString(),
+                    Observacoes = presencaDict.GetValueOrDefault("observacoes")?.ToString()
+                };
+
+                registrosPresenca.Insert(0, registro);
+
+                // Manter apenas os últimos registros
+                if (registrosPresenca.Count > MaxRegistrosExibidos)
+                {
+                    registrosPresenca = registrosPresenca.Take(MaxRegistrosExibidos).ToList();
+                }
+
+                // Auto-scroll se habilitado
+                if (autoScroll)
+                {
+                    await JSRuntime.InvokeVoidAsync("scrollToTop", "presenceFeed");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log do erro
+            Console.WriteLine($"Erro ao processar registro de presença: {ex.Message}");
+        }
+    }
+
+    private async Task AtualizarEstatisticas()
+    {
+        presencasHoje++;
+        ultimoRegistroTempo = DateTime.Now.ToString("HH:mm:ss");
+        // TODO: Atualizar outras estatísticas
+    }
+
+    private async Task RegistrarPresencaManual()
+    {
+        if (hubConnection is not null && IsConnected)
+        {
+            await hubConnection.SendAsync("RegistrarPresencaManual", 
+                int.Parse(colaboradorSelecionado), 
+                tipoRegistroSelecionado, 
+                observacoesRegistro);
+        }
+    }
+
+    private async Task TestarConexao()
+    {
+        if (hubConnection is not null && IsConnected)
+        {
+            await hubConnection.SendAsync("TestarConexaoRFID");
+        }
+    }
+
+    private void LimparFeed()
+    {
+        registrosPresenca.Clear();
+        StateHasChanged();
+    }
+
+    private void LimparFormularioRegistro()
+    {
+        colaboradorSelecionado = "";
+        tipoRegistroSelecionado = "";
+        observacoesRegistro = "";
+    }
+
+    // Métodos auxiliares para CSS e labels
+    private string GetPresenceItemClass(string tipoRegistro) => tipoRegistro switch
+    {
+        nameof(TipoRegistroPresenca.Entrada) => "presence-entrada",
+        nameof(TipoRegistroPresenca.Saida) => "presence-saida",
+        nameof(TipoRegistroPresenca.SaidaIntervalo) => "presence-intervalo",
+        nameof(TipoRegistroPresenca.RetornoIntervalo) => "presence-retorno",
+        _ => ""
+    };
+
+    private string GetTipoRegistroBadgeClass(string tipoRegistro) => tipoRegistro switch
+    {
+        nameof(TipoRegistroPresenca.Entrada) => "bg-success",
+        nameof(TipoRegistroPresenca.Saida) => "bg-danger",
+        nameof(TipoRegistroPresenca.SaidaIntervalo) => "bg-warning",
+        nameof(TipoRegistroPresenca.RetornoIntervalo) => "bg-info",
+        _ => "bg-secondary"
+    };
+
+    private string GetTipoRegistroIcon(string tipoRegistro) => tipoRegistro switch
+    {
+        nameof(TipoRegistroPresenca.Entrada) => "bi-box-arrow-in-right",
+        nameof(TipoRegistroPresenca.Saida) => "bi-box-arrow-right",
+        nameof(TipoRegistroPresenca.SaidaIntervalo) => "bi-pause-circle",
+        nameof(TipoRegistroPresenca.RetornoIntervalo) => "bi-play-circle",
+        _ => "bi-circle"
+    };
+
+    private string GetTipoRegistroLabel(string tipoRegistro) => tipoRegistro switch
+    {
+        nameof(TipoRegistroPresenca.Entrada) => "Entrada",
+        nameof(TipoRegistroPresenca.Saida) => "Saída",
+        nameof(TipoRegistroPresenca.SaidaIntervalo) => "Saída Intervalo",
+        nameof(TipoRegistroPresenca.RetornoIntervalo) => "Retorno Intervalo",
+        _ => tipoRegistro
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    // Modelo para registro em tempo real
+    public class RegistroPresencaRealTime
+    {
+        public string ColaboradorNome { get; set; } = "";
+        public string ColaboradorArea { get; set; } = "";
+        public string TipoRegistro { get; set; } = "";
+        public DateTime DataHora { get; set; }
+        public string? DispositivoOrigem { get; set; }
+        public string? Observacoes { get; set; }
+    }
+}
+
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        color: #1e40af;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .stat-today .stat-icon { background-color: #3b82f6; }
+    .stat-online .stat-icon { background-color: #10b981; }
+    .stat-areas .stat-icon { background-color: #f59e0b; }
+    .stat-last .stat-icon { background-color: #8b5cf6; }
+
+    .stat-number {
+        font-size: 1.875rem;
+        font-weight: bold;
+        color: #1f2937;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .presence-feed {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .presence-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        gap: 1rem;
+        transition: background-color 0.3s ease;
+    }
+
+    .presence-item:hover {
+        background-color: #f9fafb;
+    }
+
+    .presence-item:last-child {
+        border-bottom: none;
+    }
+
+    .presence-avatar {
+        font-size: 2rem;
+        color: #6b7280;
+        flex-shrink: 0;
+    }
+
+    .presence-content {
+        flex-grow: 1;
+    }
+
+    .presence-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .presence-name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .presence-badge {
+        font-size: 0.75rem;
+    }
+
+    .presence-time {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-left: auto;
+    }
+
+    .presence-details {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .presence-area {
+        font-weight: 500;
+    }
+
+    .presence-icon {
+        font-size: 1.25rem;
+        color: #6b7280;
+        flex-shrink: 0;
+    }
+
+    .presence-entrada {
+        border-left: 4px solid #10b981;
+    }
+
+    .presence-saida {
+        border-left: 4px solid #ef4444;
+    }
+
+    .presence-intervalo {
+        border-left: 4px solid #f59e0b;
+    }
+
+    .presence-retorno {
+        border-left: 4px solid #3b82f6;
+    }
+
+    .connection-status .badge {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+    }
+</style>
