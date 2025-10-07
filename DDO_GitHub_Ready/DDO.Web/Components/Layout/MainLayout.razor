@@ -10,9 +10,9 @@
     <main>
         <div class="top-row px-4 auth">
             <AuthorizeView>
-                <Authorized>
+                <Authorized Context="authContext">
                     <div class="user-info">
-                        <span class="user-name">Olá, @context.User.Identity?.Name</span>
+                        <span class="user-name">Olá, @authContext.User.Identity?.Name</span>
                         <form method="post" action="/Account/Logout">
                             <button type="submit" class="btn btn-link nav-link">
                                 <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Sair

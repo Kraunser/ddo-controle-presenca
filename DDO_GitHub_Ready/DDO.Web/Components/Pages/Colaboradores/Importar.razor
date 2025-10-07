@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using DDO.Application.Services
+@using DDO.Web.Models
 @attribute [Authorize(Roles = "Administrator,Manager")]
 @inject ColaboradorImportService ImportService
 @inject IJSRuntime JSRuntime
@@ -302,7 +303,8 @@
 
         try
         {
-            resultadoImportacao = await ImportService.ImportarColaboradoresAsync(arquivoSelecionado);
+            var formFile = new BrowserFileAsFormFile(arquivoSelecionado);
+            resultadoImportacao = await ImportService.ImportarColaboradoresAsync(formFile);
             importacaoRealizada = true;
         }
         catch (Exception ex)

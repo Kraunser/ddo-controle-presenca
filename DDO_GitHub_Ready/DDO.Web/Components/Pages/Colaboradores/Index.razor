@@ -47,7 +47,7 @@
             
             <div class="col-md-3">
                 <label class="form-label">Área</label>
-                <select class="form-select" @bind="filtroAreaId" @onchange="CarregarColaboradores">
+                <select class="form-select" @bind="filtroAreaId">
                     <option value="">Todas as áreas</option>
                     @foreach (var area in areas)
                     {
@@ -58,7 +58,7 @@
             
             <div class="col-md-3">
                 <label class="form-label">Status</label>
-                <select class="form-select" @bind="filtroStatus" @onchange="CarregarColaboradores">
+                <select class="form-select" @bind="filtroStatus">
                     <option value="">Todos</option>
                     <option value="ativo">Ativos</option>
                     <option value="inativo">Inativos</option>
@@ -82,7 +82,7 @@
                 Colaboradores (@totalColaboradores)
             </h5>
             <div class="d-flex gap-2">
-                <select class="form-select form-select-sm" style="width: auto;" @bind="itensPorPagina" @onchange="CarregarColaboradores">
+                <select class="form-select form-select-sm" style="width: auto;" @bind="itensPorPagina">
                     <option value="10">10 por página</option>
                     <option value="25">25 por página</option>
                     <option value="50">50 por página</option>

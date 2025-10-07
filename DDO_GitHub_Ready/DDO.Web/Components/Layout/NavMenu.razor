@@ -66,7 +66,7 @@
                 </div>
 
                 <!-- Administração -->
-                <AuthorizeView Roles="Administrator,Manager">
+                <AuthorizeView Roles="Administrator,Manager" Context="authContext">
                     <div class="nav-section">
                         <div class="nav-section-title">Administração</div>
                         
@@ -91,7 +91,7 @@
                 </AuthorizeView>
 
                 <!-- Sistema -->
-                <AuthorizeView Roles="Administrator">
+                <AuthorizeView Roles="Administrator" Context="authContextSistema">
                     <div class="nav-section">
                         <div class="nav-section-title">Sistema</div>
                         

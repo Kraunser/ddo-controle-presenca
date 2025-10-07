@@ -35,7 +35,7 @@
             <div class="col-md-4">
                 <label class="form-label">Buscar por nome</label>
                 <div class="input-group">
-                    <input type="text" class="form-control" @bind="filtroNome" @onkeypress="@(async (e) => { if (e.Key == "Enter") await CarregarArquivos(); })" placeholder="Digite o nome do arquivo...">
+                 <input type="text" class="form-control" @bind="filtroNome" @onkeypress="@(async (e) => { if (e.Key == "Enter") await CarregarArquivos(); })" placeholder="Nome do arquivo..." />
                     <button class="btn btn-outline-secondary" type="button" @onclick="CarregarArquivos">
                         <span class="bi bi-search"></span>
                     </button>
@@ -44,7 +44,7 @@
             
             <div class="col-md-3">
                 <label class="form-label">Área</label>
-                <select class="form-select" @bind="filtroAreaId" @onchange="CarregarArquivos">
+                    <select class="form-select" @bind="filtroAreaId">
                     <option value="">Todas as áreas</option>
                     @foreach (var area in areas)
                     {
@@ -55,12 +55,12 @@
             
             <div class="col-md-2">
                 <label class="form-label">Data início</label>
-                <input type="date" class="form-control" @bind="dataInicio" @onchange="CarregarArquivos">
+                <input type="date" class="form-control" @bind="dataInicio">
             </div>
             
             <div class="col-md-2">
                 <label class="form-label">Data fim</label>
-                <input type="date" class="form-control" @bind="dataFim" @onchange="CarregarArquivos">
+                <input type="date" class="form-control" @bind="dataFim">
             </div>
             
             <div class="col-md-1 d-flex align-items-end">
@@ -80,7 +80,7 @@
                 Arquivos (@totalArquivos)
             </h5>
             <div class="d-flex gap-2">
-                <select class="form-select form-select-sm" style="width: auto;" @bind="itensPorPagina" @onchange="CarregarArquivos">
+                <select class="form-select form-select-sm" style="width: auto;" @bind="itensPorPagina">
                     <option value="10">10 por página</option>
                     <option value="25">25 por página</option>
                     <option value="50">50 por página</option>
@@ -165,7 +165,7 @@
                                         <button class="btn btn-outline-success" @onclick="() => DownloadArquivo(arquivo.Id)" title="Download">
                                             <span class="bi bi-download"></span>
                                         </button>
-                                        <AuthorizeView Roles="Administrator,Manager">
+                                       <AuthorizeView Roles="Administrator,Manager" Context="authContext">
                                             <button class="btn btn-outline-danger" @onclick="() => ConfirmarRemocao(arquivo)" title="Remover">
                                                 <span class="bi bi-trash"></span>
                                             </button>
