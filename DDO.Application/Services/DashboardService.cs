@@ -1,5 +1,9 @@
 using DDO.Application.Interfaces;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace DDO.Application.Services
 {
@@ -46,15 +50,15 @@ namespace DDO.Application.Services
                 };
 
                 // Executar consultas em paralelo para melhor performance
-                var tasks = new[]
+                var tasks = new Task<object>[]
                 {
-                    ObterEstatisticasGeraisAsync(inicio, fim),
-                    ObterDadosPresencaPorAreaAsync(inicio, fim),
-                    ObterTendenciaPresencaAsync(inicio, fim),
-                    ObterRankingColaboradoresAsync(inicio, fim),
-                    ObterDistribuicaoHorariaAsync(inicio, fim),
-                    ObterComparativoPeriodicosAsync(inicio, fim),
-                    ObterEstatisticasArquivosAsync(inicio, fim)
+                    ObterEstatisticasGeraisAsync(inicio, fim).ContinueWith(t => (object)t.Result),
+                    ObterDadosPresencaPorAreaAsync(inicio, fim).ContinueWith(t => (object)t.Result),
+                    ObterTendenciaPresencaAsync(inicio, fim).ContinueWith(t => (object)t.Result),
+                    ObterRankingColaboradoresAsync(inicio, fim).ContinueWith(t => (object)t.Result),
+                    ObterDistribuicaoHorariaAsync(inicio, fim).ContinueWith(t => (object)t.Result),
+                    ObterComparativoPeriodicosAsync(inicio, fim).ContinueWith(t => (object)t.Result),
+                    ObterEstatisticasArquivosAsync(inicio, fim).ContinueWith(t => (object)t.Result)
                 };
 
                 var resultados = await Task.WhenAll(tasks);

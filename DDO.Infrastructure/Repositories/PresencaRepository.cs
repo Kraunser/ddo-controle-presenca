@@ -149,12 +149,21 @@ namespace DDO.Infrastructure.Repositories
                 .Include(p => p.Colaborador)
                 .ThenInclude(c => c.Area)
                 .Where(p => p.DataPresenca >= dataInicio && p.DataPresenca <= dataFim)
+<<<<<<< HEAD
                 .GroupBy(p => new { p.ColaboradorId, p.Colaborador.Nome, p.Colaborador.Area!.Nome })
                 .Select(g => new
                 {
                     ColaboradorId = g.Key.ColaboradorId,
                     NomeColaborador = g.Key.Nome,
                     Area = g.Key.Nome,
+=======
+                .GroupBy(p => new { p.ColaboradorId, NomeColaborador = p.Colaborador.Nome, NomeArea = p.Colaborador.Area!.Nome })
+                .Select(g => new
+                {
+                    ColaboradorId = g.Key.ColaboradorId,
+                    NomeColaborador = g.Key.NomeColaborador,
+                    Area = g.Key.NomeArea,
+>>>>>>> b90a182 (Initial commit of DDO project)
                     TotalPresencas = g.Count(),
                     DiasPresentes = g.Select(p => p.DataPresenca).Distinct().Count()
                 })
