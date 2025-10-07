@@ -8,19 +8,6 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-<<<<<<< HEAD
-// Configuração do banco de dados
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=(localdb)\\mssqllocaldb;Database=DDO_ControlePonto;Trusted_Connection=true;MultipleActiveResultSets=true";
-
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-// Configuração do ASP.NET Core Identity
-builder.Services.AddDefaultIdentity<IdentityUser>(options => 
-{
-    // Configurações de senha
-=======
 // ===== CONFIGURAÇÃO DO BANCO DE DADOS =====
 // Obtém a connection string do arquivo de configuração
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -35,24 +22,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDefaultIdentity<IdentityUser>(options => 
 {
     // Configurações de política de senha
->>>>>>> b90a182 (Initial commit of DDO project)
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = true;
-<<<<<<< HEAD
-    options.Password.RequiredLength = 6;
-    options.Password.RequiredUniqueChars = 1;
-
-    // Configurações de lockout
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-=======
     options.Password.RequiredLength = 8;
     options.Password.RequiredUniqueChars = 1;
 
     // Configurações de bloqueio de conta
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
->>>>>>> b90a182 (Initial commit of DDO project)
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
 
@@ -60,28 +38,13 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
     options.User.RequireUniqueEmail = true;
 
-<<<<<<< HEAD
-    // Configurações de confirmação de email (desabilitado para desenvolvimento)
-=======
     // Configurações de confirmação (desabilitado para desenvolvimento)
->>>>>>> b90a182 (Initial commit of DDO project)
     options.SignIn.RequireConfirmedEmail = false;
     options.SignIn.RequireConfirmedPhoneNumber = false;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-<<<<<<< HEAD
-// Configuração de autorização
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireAdministratorRole", policy => policy.RequireRole("Administrator"));
-    options.AddPolicy("RequireManagerRole", policy => policy.RequireRole("Manager", "Administrator"));
-    options.AddPolicy("RequireUserRole", policy => policy.RequireRole("User", "Manager", "Administrator"));
-});
-
-// Registro dos repositórios
-=======
 // ===== CONFIGURAÇÃO DE AUTORIZAÇÃO =====
 // Define políticas de autorização baseadas em roles
 builder.Services.AddAuthorization(options =>
@@ -98,89 +61,18 @@ builder.Services.AddAuthorization(options =>
 
 // ===== REGISTRO DOS REPOSITÓRIOS =====
 // Implementações dos padrões Repository para acesso a dados
->>>>>>> b90a182 (Initial commit of DDO project)
 builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IArquivoPDFRepository, ArquivoPDFRepository>();
 builder.Services.AddScoped<IColaboradorRepository, ColaboradorRepository>();
 builder.Services.AddScoped<IPresencaRepository, PresencaRepository>();
 
-<<<<<<< HEAD
-// Registro dos serviços
-=======
 // ===== REGISTRO DOS SERVIÇOS DE APLICAÇÃO =====
 // Serviços que contêm a lógica de negócio da aplicação
->>>>>>> b90a182 (Initial commit of DDO project)
 builder.Services.AddScoped<FileUploadService>();
 builder.Services.AddScoped<ColaboradorImportService>();
 builder.Services.AddScoped<PresencaService>();
 builder.Services.AddScoped<DashboardService>();
 
-<<<<<<< HEAD
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-// Configuração do SignalR para comunicação em tempo real (RFID)
-builder.Services.AddSignalR();
-
-// Adicionar controllers para API
-builder.Services.AddControllers();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-// Middleware de autenticação e autorização
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.UseAntiforgery();
-
-// Mapeamento das páginas do Identity
-app.MapRazorPages();
-
-// Mapeamento dos controllers da API
-app.MapControllers();
-
-// Mapeamento do hub SignalR
-app.MapHub<DDO.Web.Hubs.PresencaHub>("/presencahub");
-
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-// Inicialização do banco de dados
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    
-    // Aplicar migrações pendentes
-    context.Database.EnsureCreated();
-    
-    // Criar roles padrão
-    await CreateDefaultRoles(roleManager);
-    
-    // Criar usuário administrador padrão
-    await CreateDefaultAdmin(userManager);
-}
-
-app.Run();
-
-/// <summary>
-/// Cria as roles padrão do sistema
-/// </summary>
-static async Task CreateDefaultRoles(RoleManager<IdentityRole> roleManager)
-=======
 // ===== CONFIGURAÇÃO DO BLAZOR =====
 // Adiciona suporte ao Blazor Server com componentes interativos
 builder.Services.AddRazorComponents()
@@ -251,6 +143,13 @@ using (var scope = app.Services.CreateScope())
         
         // Cria roles e usuário administrador padrão
         await SeedDataAsync(userManager, roleManager);
+        
+        // Popula o banco com dados de teste (apenas em desenvolvimento)
+        if (app.Environment.IsDevelopment())
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            await DDO.Infrastructure.Data.DatabaseSeeder.SeedAsync(context, logger);
+        }
     }
     catch (Exception ex)
     {
@@ -279,36 +178,21 @@ static async Task SeedDataAsync(UserManager<IdentityUser> userManager, RoleManag
 /// </summary>
 /// <param name="roleManager">Gerenciador de roles do Identity</param>
 static async Task CreateDefaultRolesAsync(RoleManager<IdentityRole> roleManager)
->>>>>>> b90a182 (Initial commit of DDO project)
 {
     string[] roleNames = { "Administrator", "Manager", "User" };
     
     foreach (var roleName in roleNames)
     {
-<<<<<<< HEAD
-        var roleExist = await roleManager.RoleExistsAsync(roleName);
-        if (!roleExist)
-        {
-            await roleManager.CreateAsync(new IdentityRole(roleName));
-=======
         var roleExists = await roleManager.RoleExistsAsync(roleName);
         if (!roleExists)
         {
             var role = new IdentityRole(roleName);
             await roleManager.CreateAsync(role);
->>>>>>> b90a182 (Initial commit of DDO project)
         }
     }
 }
 
 /// <summary>
-<<<<<<< HEAD
-/// Cria o usuário administrador padrão
-/// </summary>
-static async Task CreateDefaultAdmin(UserManager<IdentityUser> userManager)
-{
-    var adminEmail = "admin@randoncorp.com";
-=======
 /// Cria o usuário administrador padrão se não existir
 /// </summary>
 /// <param name="userManager">Gerenciador de usuários do Identity</param>
@@ -317,7 +201,6 @@ static async Task CreateDefaultAdminAsync(UserManager<IdentityUser> userManager)
     const string adminEmail = "admin@randoncorp.com";
     const string adminPassword = "Admin@123456";
     
->>>>>>> b90a182 (Initial commit of DDO project)
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     
     if (adminUser == null)
@@ -329,22 +212,15 @@ static async Task CreateDefaultAdminAsync(UserManager<IdentityUser> userManager)
             EmailConfirmed = true
         };
         
-<<<<<<< HEAD
-        var result = await userManager.CreateAsync(newAdminUser, "Admin@123");
-=======
         var result = await userManager.CreateAsync(newAdminUser, adminPassword);
->>>>>>> b90a182 (Initial commit of DDO project)
         
         if (result.Succeeded)
         {
             await userManager.AddToRoleAsync(newAdminUser, "Administrator");
         }
-<<<<<<< HEAD
-=======
         else
         {
             throw new InvalidOperationException($"Falha ao criar usuário administrador: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
->>>>>>> b90a182 (Initial commit of DDO project)
     }
 }

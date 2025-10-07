@@ -1,0 +1,4 @@
+CREATE TABLE ExampleTable (
+Id INT PRIMARY KEY,
+Name NVARCHAR(100)
+ );
