@@ -82,10 +82,21 @@ Siga os passos abaixo para configurar e executar o projeto em seu ambiente local
 3.  **Aplique as Migrations do Entity Framework:**
     As *migrations* são responsáveis por criar a estrutura do banco de dados. Execute os comandos abaixo no terminal, a partir da pasta `DDO.Web`:
     ```bash
+    # Instalar EF Tools globalmente
     dotnet tool install --global dotnet-ef
+    
+    # Restaurar dependências (inclui Microsoft.EntityFrameworkCore.Design)
+    dotnet restore
+    
+    # Criar migration inicial (se necessário)
+    dotnet ef migrations add InitialCreate
+    
+    # Aplicar migrations ao banco
     dotnet ef database update
     ```
     Isso criará o banco de dados `DDO.ControlePonto` e todas as tabelas necessárias.
+    
+    **⚠️ Nota:** Se encontrar o erro "doesn't reference Microsoft.EntityFrameworkCore.Design", consulte o arquivo [CORRECAO_ERRO_EF.md](CORRECAO_ERRO_EF.md) para a solução completa.
 
 4.  **Execute a Aplicação:**
     Ainda no terminal, na pasta `DDO.Web`, execute o comando:
