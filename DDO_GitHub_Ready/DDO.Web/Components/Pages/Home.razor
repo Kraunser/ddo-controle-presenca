@@ -399,7 +399,7 @@ else
             
             await JSRuntime.InvokeVoidAsync("renderBarChart", "horariaChart", horariaLabels, horariaData, "Presenças por Hora");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Log do erro ou exibir mensagem para o usuário
             Console.WriteLine($"Erro ao renderizar gráficos: {ex.Message}");
