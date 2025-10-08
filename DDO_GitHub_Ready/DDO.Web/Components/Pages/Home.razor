@@ -357,7 +357,7 @@ else
             
             dashboardData = await DashboardService.ObterDadosDashboardAsync(inicio, fim);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao carregar dados do dashboard.");
         }
@@ -399,7 +399,7 @@ else
             
             await JSRuntime.InvokeVoidAsync("renderBarChart", "horariaChart", horariaLabels, horariaData, "Presenças por Hora");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Log do erro ou exibir mensagem para o usuário
             Console.WriteLine($"Erro ao renderizar gráficos: {ex.Message}");

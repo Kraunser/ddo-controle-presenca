@@ -264,7 +264,7 @@
             arquivos = resultado.Arquivos.ToList();
             totalArquivos = resultado.Total;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao carregar arquivos.");
         }
@@ -306,7 +306,7 @@
         {
             await JSRuntime.InvokeVoidAsync("downloadFile", $"/api/arquivos/{arquivoId}/download");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao fazer download do arquivo.");
         }
@@ -331,7 +331,7 @@
             await JSRuntime.InvokeVoidAsync("showAlert", "success", "Sucesso!", "Arquivo removido com sucesso.");
             await CarregarArquivos();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao remover arquivo.");
         }

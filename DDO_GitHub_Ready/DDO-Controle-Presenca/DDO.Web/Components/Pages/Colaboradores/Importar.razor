@@ -305,7 +305,7 @@
             resultadoImportacao = await ImportService.ImportarColaboradoresAsync(arquivoSelecionado);
             importacaoRealizada = true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Ocorreu um erro inesperado durante a importação.");
         }
@@ -344,7 +344,7 @@
             var base64 = Convert.ToBase64String(arquivoExemplo);
             await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", base64, "exemplo-colaboradores.csv", "text/csv");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao gerar arquivo de exemplo.");
         }

@@ -275,7 +275,7 @@
             colaboradores = resultado.Colaboradores.ToList();
             totalColaboradores = resultado.Total;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao carregar colaboradores.");
         }
@@ -348,7 +348,7 @@
                 await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Colaborador não encontrado.");
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Erro ao remover colaborador.");
         }

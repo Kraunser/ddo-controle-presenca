@@ -257,7 +257,7 @@
                 await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", resultado.Mensagem);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await JSRuntime.InvokeVoidAsync("showAlert", "error", "Erro!", "Ocorreu um erro inesperado. Tente novamente.");
         }
