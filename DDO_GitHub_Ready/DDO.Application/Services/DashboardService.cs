@@ -1,4 +1,5 @@
 using DDO.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace DDO.Application.Services
